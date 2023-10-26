@@ -3,8 +3,9 @@ import cv2 as cv
 import sys
 
 #importing file
-file = "sudoku_grid_test.png"
-img = cv.imread(file)
+file_normal = "sudoku_grid_test.png"
+file_rotated = "sudoku_rotated_grid.png"
+img = cv.imread(file_rotated)
 
 #changing color to gray for better image processing
 gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -23,9 +24,28 @@ out = cv.connectedComponentsWithStats(threshold,4,cv.CV_32S)
 #stats = stat of component (coordinates and area)
 #centroid = center of component
 (numLabels, labels, stats, centroid) = out
+x = cv.CC_STAT_LEFT
+y = cv.CC_STAT_TOP
 
 component = (labels==1).astype("uint8")*255
-cv.imshow("Sudoku grid", component)
+
+#get largest area of the image
+corners, _ = cv.findContours(component,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+sudoku = max(corners, key=cv.contourArea)
+
+#sorting of corners
+sudoku_corners = np.zeros((4, 2), dtype=np.float32)
+points = np.squeeze(sudoku)
+sudoku_corners[0] = points[np.argmin(points.sum(1))]
+sudoku_corners[2] = points[np.argmax(points.sum(1))]
+sudoku_corners[1] = points[np.argmin(np.diff(points, axis=1))]
+sudoku_corners[3] = points[np.argmax(np.diff(points, axis=1))]
+
+#rotating and warping grid
+output_size = (500,500)
+perspective_matrix = cv.getPerspectiveTransform(sudoku_corners, np.array([[0, 0], [output_size[0], 0], [output_size[0], output_size[1]], [0, output_size[1]]], dtype=np.float32))
+warped_sudoku = cv.warpPerspective(img, perspective_matrix, output_size)
+cv.imshow("Sudoku grid", warped_sudoku)
 
 k = cv.waitKey(0) 
 if k == ord("q"):
