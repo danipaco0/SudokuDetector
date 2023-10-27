@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 import sys
-import pytesseract
+import os
 
 def preProcessImage(image_grid):
     #changing color to gray for better image processing
@@ -32,10 +32,21 @@ def extractNumbers(image_grid):
             x2 = (col + 1) * box_width
             box = gray[y1:y2, x1:x2]
             boxes.append(box)
-    nbrs = []
-    #for b in boxes:
-        #number = pytesseract.image_to_string(b,config='--psm 10 --oem 3 -c tessedit_char_whitelist=123456789')
-        #nbrs.append(number)
+    nbrs = np.zeros((9,9))
+    templates = "digits_templates"
+    files = os.listdir(templates)
+    for i, b in enumerate(boxes):
+        start = 1
+        for f in files:
+            template = cv.imread(os.path.join(templates,f),cv.IMREAD_GRAYSCALE)
+            template = cv.resize(template, (box_width, box_height))
+            result = cv.matchTemplate(b, template, cv.TM_CCOEFF)
+            min_val, max_val, min_loc, max_loc = cv.minMaxLoc(result)
+            if max_val > 0.9:
+                nbrs[i//9][i-(i//9)*9] = start
+                break
+            if start == 9: start = 1
+            else:start+=1
     return nbrs
 
 #importing file
@@ -69,6 +80,7 @@ perspective_matrix = cv.getPerspectiveTransform(sudoku_corners, np.array([[0, 0]
 warped_sudoku = cv.warpPerspective(img, perspective_matrix, output_size)
 
 numbers = extractNumbers(warped_sudoku)
+print(numbers)
 
 cv.imshow("Sudoku grid", warped_sudoku)
 k = cv.waitKey(0)
