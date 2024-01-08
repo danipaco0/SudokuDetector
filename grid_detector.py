@@ -54,7 +54,7 @@ def preProcessImage(image_grid, block_size, C):
 
     grayscale = image_grid if len(image_grid.shape) == 2 else cv.cvtColor(image_grid, cv.COLOR_BGR2GRAY)
     
-    blur = apply_gaussian_blur(grayscale) # Removing noise from image
+    blur = apply_gaussian_blur(grayscale) # Removing noise from image / cv.GaussianBlur(grayscale, (9,9), 0) for CPU computation
     cv.imshow("Noise", blur)
     
     thresh = cv.adaptiveThreshold(blur, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block_size, C) # Converting the image to binary
